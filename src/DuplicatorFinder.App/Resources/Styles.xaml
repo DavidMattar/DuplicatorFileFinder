@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:converters="clr-namespace:DuplicatorFinder.App.Converters">
+
+    <!-- Recursos compartilhados por toda a aplicação: conversores usados em vários bindings
+         e estilos básicos de controle. Fica em um dicionário separado (em vez de direto no
+         App.xaml) para manter o App.xaml.cs focado só na composição de serviços (DI). -->
+
+    <converters:BytesToHumanReadableConverter x:Key="BytesToHumanReadable"/>
+    <converters:FilePathToThumbnailConverter x:Key="FilePathToThumbnail"/>
+
+    <Style TargetType="Button">
+        <Setter Property="Margin" Value="0,0,8,0"/>
+    </Style>
+
+</ResourceDictionary>

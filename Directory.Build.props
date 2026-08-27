@@ -1,0 +1,13 @@
+<Project>
+  <!--
+    Configurações compartilhadas por todos os projetos da solução (Core, Infrastructure, App, Tests).
+    Centralizar aqui evita repetir as mesmas tags em cada .csproj.
+  -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- não exige /// em TODO membro público; ainda assim comentamos por convenção do projeto -->
+  </PropertyGroup>
+</Project>

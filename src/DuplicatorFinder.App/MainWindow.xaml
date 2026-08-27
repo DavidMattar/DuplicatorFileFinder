@@ -1,0 +1,28 @@
+<Window x:Class="DuplicatorFinder.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:DuplicatorFinder.App.ViewModels"
+        xmlns:views="clr-namespace:DuplicatorFinder.App.Views"
+        Title="DuplicatorFinder"
+        Height="650" Width="950"
+        MinHeight="500" MinWidth="700">
+    <Window.Resources>
+        <!--
+            Um DataTemplate por tipo de ViewModel: quando CurrentViewModel muda, o
+            ContentControl abaixo escolhe automaticamente a View correta a partir do tipo
+            real do objeto — este é o mecanismo de navegação declarativa do WPF/MVVM,
+            sem precisar de nenhum código de "trocar página" manual.
+        -->
+        <DataTemplate DataType="{x:Type vm:ScanSetupViewModel}">
+            <views:ScanSetupView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ScanProgressViewModel}">
+            <views:ScanProgressView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ResultsViewModel}">
+            <views:ResultsView/>
+        </DataTemplate>
+    </Window.Resources>
+
+    <ContentControl Content="{Binding CurrentViewModel}"/>
+</Window>

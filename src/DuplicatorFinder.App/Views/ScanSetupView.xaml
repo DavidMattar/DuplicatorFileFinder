@@ -1,0 +1,58 @@
+<UserControl x:Class="DuplicatorFinder.App.Views.ScanSetupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Pastas para escanear" FontWeight="Bold" FontSize="16" Margin="0,0,0,8"/>
+
+        <ListBox Grid.Row="1" ItemsSource="{Binding SelectedFolders}" SelectedItem="{Binding SelectedFolder}" MinHeight="120" Margin="0,0,0,8"/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,16">
+            <Button Content="Adicionar pasta..." Command="{Binding AddFolderCommand}" Padding="8,4" Margin="0,0,8,0"/>
+            <Button Content="Remover selecionada" Command="{Binding RemoveFolderCommand}" Padding="8,4" Margin="0,0,16,0"/>
+            <CheckBox Content="Incluir subpastas" IsChecked="{Binding IncludeSubfolders}" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Margin="0,0,0,16">
+            <TextBlock Text="O que buscar" FontWeight="Bold" Margin="0,0,0,4"/>
+            <CheckBox Content="Arquivos idênticos (qualquer tipo)" IsChecked="{Binding DetectExact}" Margin="0,2"/>
+            <CheckBox Content="Imagens similares" IsChecked="{Binding DetectSimilarImages}" Margin="0,2"/>
+            <CheckBox Content="Vídeos similares (baixa o ffmpeg na primeira vez, ~70MB)" IsChecked="{Binding DetectSimilarVideos}" Margin="0,2"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <TextBlock Text="Sensibilidade de imagem:" VerticalAlignment="Center" Width="160"/>
+                <Slider Minimum="50" Maximum="100" Width="200" Value="{Binding ImageSimilarityPercent}" IsEnabled="{Binding DetectSimilarImages}"/>
+                <TextBlock Text="{Binding ImageSimilarityPercent, StringFormat='{}{0:0}%'}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <TextBlock Text="Sensibilidade de vídeo:" VerticalAlignment="Center" Width="160"/>
+                <Slider Minimum="50" Maximum="100" Width="200" Value="{Binding VideoSimilarityPercent}" IsEnabled="{Binding DetectSimilarVideos}"/>
+                <TextBlock Text="{Binding VideoSimilarityPercent, StringFormat='{}{0:0}%'}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <TextBlock Text="Manter (por padrão):" VerticalAlignment="Center" Width="160"/>
+                <ComboBox ItemsSource="{Binding KeepStrategies}" SelectedItem="{Binding KeepStrategy}" Width="200"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <TextBlock Text="Tamanho mínimo (KB):" VerticalAlignment="Center" Width="160"/>
+                <TextBox Text="{Binding MinFileSizeKb}" Width="100"/>
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4">
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" Margin="0,0,0,8"/>
+            <Button Content="Iniciar escaneamento" Command="{Binding StartScanCommand}"
+                    Padding="16,8" HorizontalAlignment="Left" FontWeight="Bold"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
