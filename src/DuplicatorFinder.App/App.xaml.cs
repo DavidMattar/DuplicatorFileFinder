@@ -8,6 +8,7 @@ using DuplicatorFinder.Core.Engine;
 using DuplicatorFinder.Core.Hashing;
 using DuplicatorFinder.Core.Scanning;
 using DuplicatorFinder.Core.SmartSelect;
+using DuplicatorFinder.Infrastructure.Move;
 using DuplicatorFinder.Infrastructure.Recycle;
 using DuplicatorFinder.Infrastructure.Settings;
 using DuplicatorFinder.Infrastructure.Video;
@@ -52,6 +53,7 @@ public partial class App : Application
         services.AddSingleton<IImageHasher, ImageHasher>();
         services.AddSingleton<IFileScanner, FileScanner>();
         services.AddSingleton<IRecycleBinService, WindowsRecycleBinService>();
+        services.AddSingleton<IDuplicateMoveService, DuplicateMoveService>();
         services.AddSingleton<ISettingsService, JsonSettingsService>();
         services.AddSingleton<ISmartSelectStrategy, DefaultSmartSelectStrategy>();
         services.AddSingleton<FfmpegBootstrap>();

@@ -19,4 +19,11 @@ public sealed class AppSettings
 
     /// <summary>Estratégia de smart-select preferida pelo usuário.</summary>
     public KeepStrategy PreferredKeepStrategy { get; init; } = KeepStrategy.OldestFile;
+
+    /// <summary>
+    /// Última pasta escolhida como destino da ação "Mover selecionados" na tela de
+    /// resultados — usada para pré-popular o popup de escolha de pasta na próxima vez, em vez
+    /// de o usuário ter que navegar até ela de novo. Null até a primeira vez que a ação for usada.
+    /// </summary>
+    public string? LastCopiesMoveDestinationFolder { get; init; }
 }

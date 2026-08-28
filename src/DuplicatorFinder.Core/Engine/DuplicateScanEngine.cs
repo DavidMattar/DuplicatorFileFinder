@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using DuplicatorFinder.Core.Abstractions;
 using DuplicatorFinder.Core.Models;
+using DuplicatorFinder.Core.Support;
 
 namespace DuplicatorFinder.Core.Engine;
 
@@ -15,14 +16,6 @@ namespace DuplicatorFinder.Core.Engine;
 /// </summary>
 public sealed class DuplicateScanEngine
 {
-    /// <summary>Extensões tratadas como imagem, para decidir quais arquivos vão para o <see cref="DuplicateKind.SimilarImage"/>.</summary>
-    private static readonly HashSet<string> ImageExtensions =
-        [".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp", ".tif", ".tiff"];
-
-    /// <summary>Extensões tratadas como vídeo, para decidir quais arquivos vão para o <see cref="DuplicateKind.SimilarVideo"/>.</summary>
-    private static readonly HashSet<string> VideoExtensions =
-        [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v"];
-
     /// <summary>
     /// Nomes das sub-fases de progresso que cada tipo de detector pode reportar. Usado para
     /// avisar o <see cref="ProgressAggregator"/> de quais pesos marcar como concluídos quando
@@ -146,8 +139,8 @@ public sealed class DuplicateScanEngine
     private static List<FileEntry> GetCandidates(DuplicateKind kind, IReadOnlyList<FileEntry> allFiles) => kind switch
     {
         DuplicateKind.ExactFile => allFiles.ToList(),
-        DuplicateKind.SimilarImage => allFiles.Where(f => ImageExtensions.Contains(f.Extension)).ToList(),
-        DuplicateKind.SimilarVideo => allFiles.Where(f => VideoExtensions.Contains(f.Extension)).ToList(),
+        DuplicateKind.SimilarImage => allFiles.Where(f => FileTypeClassifier.IsImageExtension(f.Extension)).ToList(),
+        DuplicateKind.SimilarVideo => allFiles.Where(f => FileTypeClassifier.IsVideoExtension(f.Extension)).ToList(),
         _ => [],
     };
 

@@ -16,8 +16,14 @@ namespace DuplicatorFinder.App.Converters;
 /// </summary>
 public sealed class FilePathToThumbnailConverter : IValueConverter
 {
-    private const int ThumbnailPixelWidth = 48;
+    private const int DefaultPixelWidth = 48;
 
+    /// <summary>
+    /// Largura de decodificação em pixels: usa <see cref="DefaultPixelWidth"/> (miniatura da
+    /// lista de resultados) a menos que o binding informe um <c>ConverterParameter</c> com um
+    /// número maior (usado pela janela de preview, que quer imagens bem maiores) — reaproveita
+    /// o mesmo decode-com-fallback-silencioso em vez de duplicar essa lógica em outro conversor.
+    /// </summary>
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not string path)
@@ -25,14 +31,23 @@ public sealed class FilePathToThumbnailConverter : IValueConverter
             return null;
         }
 
+        var pixelWidth = parameter is string parameterText && int.TryParse(parameterText, out var requested)
+            ? requested
+            : DefaultPixelWidth;
+
         try
         {
-            var bitmap = new BitmapImage
-            {
-                CacheOption = BitmapCacheOption.OnLoad,
-                DecodePixelWidth = ThumbnailPixelWidth,
-                UriSource = new Uri(path),
-            };
+            // BeginInit/EndInit explícitos são necessários aqui: preencher as mesmas
+            // propriedades via inicializador de objeto (sem Begin/EndInit) deixa o BitmapImage
+            // num estado "nunca finalizado" que não lança nem em Convert() nem no binding, só
+            // falha silenciosamente ao ser efetivamente desenhado — só se nota olhando a tela
+            // renderizada de verdade, nunca num teste automatizado com mocks.
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.DecodePixelWidth = pixelWidth;
+            bitmap.UriSource = new Uri(path);
+            bitmap.EndInit();
             bitmap.Freeze();
             return bitmap;
         }

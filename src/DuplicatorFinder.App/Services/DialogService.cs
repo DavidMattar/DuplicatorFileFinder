@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using DuplicatorFinder.App.ViewModels;
 using DuplicatorFinder.App.Views;
@@ -13,11 +14,17 @@ namespace DuplicatorFinder.App.Services;
 public sealed class DialogService : IDialogService
 {
     /// <inheritdoc />
-    public string? PickFolder(string title)
+    public string? PickFolder(string title, string? initialDirectory = null)
     {
         // Microsoft.Win32.OpenFolderDialog é nativo do .NET 8 WPF — não precisa de nenhum
         // pacote NuGet adicional só para escolher uma pasta.
         var dialog = new OpenFolderDialog { Title = title };
+
+        if (!string.IsNullOrWhiteSpace(initialDirectory) && Directory.Exists(initialDirectory))
+        {
+            dialog.InitialDirectory = initialDirectory;
+        }
+
         return dialog.ShowDialog() == true ? dialog.FolderName : null;
     }
 
@@ -35,8 +42,47 @@ public sealed class DialogService : IDialogService
     }
 
     /// <inheritdoc />
+    public bool ConfirmMove(int fileCount, long totalBytesToMove, string destinationFolder)
+    {
+        var viewModel = new MoveConfirmationViewModel(fileCount, totalBytesToMove, destinationFolder);
+        var dialog = new MoveConfirmationDialog
+        {
+            DataContext = viewModel,
+            Owner = Application.Current.MainWindow,
+        };
+
+        return dialog.ShowDialog() == true;
+    }
+
+    /// <inheritdoc />
     public void ShowError(string message)
     {
         MessageBox.Show(message, "DuplicatorFinder", MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+
+    /// <inheritdoc />
+    public void ShowPreview(IReadOnlyList<FileCandidateViewModel> files)
+    {
+        var window = new PreviewWindow
+        {
+            DataContext = new PreviewViewModel(files),
+            Owner = Application.Current.MainWindow,
+        };
+
+        // Show() (não-modal): o usuário deve poder continuar interagindo com a tela de
+        // resultados (ex: ajustar seleção) enquanto compara as imagens.
+        window.Show();
+    }
+
+    /// <inheritdoc />
+    public void OpenLocations(IReadOnlyList<FileCandidateViewModel> files)
+    {
+        var window = new OpenLocationsWindow
+        {
+            DataContext = new OpenLocationsViewModel(files),
+            Owner = Application.Current.MainWindow,
+        };
+
+        window.Show();
     }
 }

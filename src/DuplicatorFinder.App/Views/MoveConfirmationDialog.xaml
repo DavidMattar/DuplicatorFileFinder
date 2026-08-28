@@ -1,0 +1,39 @@
+<Window x:Class="DuplicatorFinder.App.Views.MoveConfirmationDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Confirmar movimentação"
+        Height="250" Width="460"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock FontSize="16" FontWeight="Bold" Margin="0,0,0,12" TextWrapping="Wrap">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="{}{0} arquivo(s) (originais mantidos + cópias) serão movidos">
+                        <Binding Path="FileCount"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <TextBlock TextWrapping="Wrap" Margin="0,0,0,8">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="{}Isso move {0} para uma nova subpasta numerada &quot;copias(x)&quot; dentro de:">
+                        <Binding Path="TotalSizeDisplay"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <TextBlock Text="{Binding DestinationFolder}" TextWrapping="Wrap" FontWeight="Bold" Margin="0,0,0,8"/>
+            <TextBlock Text="Cada grupo fica com o arquivo original ao lado de uma pasta com suas cópias. Nada é excluído." TextWrapping="Wrap" Foreground="Gray"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Cancelar" Width="90" Margin="0,0,8,0" IsCancel="True" Click="OnCancelClick"/>
+            <Button Content="Mover" Width="90" IsDefault="True" FontWeight="Bold" Click="OnConfirmClick"/>
+        </StackPanel>
+    </Grid>
+</Window>

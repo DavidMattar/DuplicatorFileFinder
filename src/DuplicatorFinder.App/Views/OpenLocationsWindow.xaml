@@ -1,0 +1,30 @@
+<Window x:Class="DuplicatorFinder.App.Views.OpenLocationsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Abrir locais"
+        Height="320" Width="620"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="12">
+        <TabControl ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}">
+            <TabControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding FileName}"/>
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+            <TabControl.ContentTemplate>
+                <DataTemplate>
+                    <StackPanel Margin="16">
+                        <TextBlock Text="Pasta:" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding FolderPath}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Arquivo:" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding FullPath}" TextWrapping="Wrap" Foreground="Gray" Margin="0,0,0,16"/>
+
+                        <Button Content="Abrir pesquisa no Explorer" Command="{Binding OpenExplorerSearchCommand}"
+                                HorizontalAlignment="Left" Padding="10,6"/>
+                    </StackPanel>
+                </DataTemplate>
+            </TabControl.ContentTemplate>
+        </TabControl>
+    </Grid>
+</Window>

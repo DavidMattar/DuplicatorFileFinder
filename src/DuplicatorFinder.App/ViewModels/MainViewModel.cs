@@ -19,6 +19,8 @@ public sealed partial class MainViewModel : ObservableObject
 {
     private readonly DuplicateScanEngine _engine;
     private readonly IRecycleBinService _recycleBinService;
+    private readonly IDuplicateMoveService _duplicateMoveService;
+    private readonly ISettingsService _settingsService;
     private readonly IDialogService _dialogService;
     private readonly ScanSetupViewModel _setupViewModel;
 
@@ -29,10 +31,14 @@ public sealed partial class MainViewModel : ObservableObject
         ScanSetupViewModel setupViewModel,
         DuplicateScanEngine engine,
         IRecycleBinService recycleBinService,
+        IDuplicateMoveService duplicateMoveService,
+        ISettingsService settingsService,
         IDialogService dialogService)
     {
         _engine = engine;
         _recycleBinService = recycleBinService;
+        _duplicateMoveService = duplicateMoveService;
+        _settingsService = settingsService;
         _dialogService = dialogService;
 
         _setupViewModel = setupViewModel;
@@ -61,7 +67,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void OnScanCompleted(object? sender, ScanResult result)
     {
-        var resultsViewModel = new ResultsViewModel(result, _recycleBinService, _dialogService);
+        var resultsViewModel = new ResultsViewModel(result, _recycleBinService, _duplicateMoveService, _settingsService, _dialogService);
         resultsViewModel.NewScanRequested += (_, _) => CurrentViewModel = _setupViewModel;
 
         CurrentViewModel = resultsViewModel;

@@ -1,0 +1,12 @@
+## .NET build outputs
+[Bb]in/
+[Oo]bj/
+
+## Rider/VS user-specific files
+.vs/
+.idea/
+*.user
+*.suo
+
+## Pasta de dados de teste locais (gerada sob demanda, nao versionada)
+/fileTesting/

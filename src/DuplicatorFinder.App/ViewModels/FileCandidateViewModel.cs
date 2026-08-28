@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using DuplicatorFinder.Core.Models;
+using DuplicatorFinder.Core.Support;
 
 namespace DuplicatorFinder.App.ViewModels;
 
@@ -30,6 +31,12 @@ public sealed partial class FileCandidateViewModel : ObservableObject
 
     /// <summary>Explicação legível da decisão do smart-select para este arquivo.</summary>
     public string? Reason => Model.Reason;
+
+    /// <summary>
+    /// Verdadeiro se este arquivo é de um formato de imagem suportado — usado para decidir se
+    /// ele participa do preview lado a lado (<see cref="ResultsViewModel"/> via <see cref="Services.IDialogService.ShowPreview"/>).
+    /// </summary>
+    public bool IsImage => FileTypeClassifier.IsImageExtension(Model.File.Extension);
 
     /// <summary>
     /// Estado do checkbox de exclusão, editável livremente pelo usuário na UI — inclusive
