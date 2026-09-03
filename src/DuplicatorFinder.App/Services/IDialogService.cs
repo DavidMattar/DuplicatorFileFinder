@@ -1,4 +1,5 @@
 using DuplicatorFinder.App.ViewModels;
+using DuplicatorFinder.Core.Models;
 
 namespace DuplicatorFinder.App.Services;
 
@@ -21,8 +22,21 @@ public interface IDialogService
     /// <summary>Exibe o diálogo de confirmação de exclusão; retorna true se o usuário confirmar.</summary>
     bool ConfirmDeletion(int fileCount, long totalBytesToFree);
 
+    /// <summary>
+    /// Exibe o diálogo que pergunta <b>como</b> mover os arquivos selecionados (mover o grupo
+    /// inteiro ou manter o de maior resolução onde está); retorna null se o usuário cancelar.
+    /// É a primeira etapa da ação "Mover selecionados", antes mesmo de escolher a pasta de
+    /// destino, porque o modo muda quantos arquivos serão movidos e, portanto, o que o diálogo
+    /// de confirmação vai mostrar.
+    /// </summary>
+    DuplicateMoveMode? PickMoveMode();
+
     /// <summary>Exibe o diálogo de confirmação de movimentação de cópias; retorna true se o usuário confirmar.</summary>
-    bool ConfirmMove(int fileCount, long totalBytesToMove, string destinationFolder);
+    /// <param name="fileCount">Quantidade de arquivos que efetivamente sairão do lugar.</param>
+    /// <param name="totalBytesToMove">Soma do tamanho desses arquivos.</param>
+    /// <param name="destinationFolder">Pasta onde a subpasta numerada "copias(x)" será criada.</param>
+    /// <param name="mode">Modo escolhido em <see cref="PickMoveMode"/> — o texto do diálogo explica o que ele faz com o arquivo que sobrevive em cada grupo.</param>
+    bool ConfirmMove(int fileCount, long totalBytesToMove, string destinationFolder, DuplicateMoveMode mode);
 
     /// <summary>Exibe uma mensagem de erro simples ao usuário.</summary>
     void ShowError(string message);

@@ -26,11 +26,30 @@ public sealed partial class FileCandidateViewModel : ObservableObject
 
     public DateTime ModifiedUtc => Model.File.ModifiedUtc;
 
-    /// <summary>Verdadeiro se este foi o arquivo escolhido pelo smart-select para ser mantido.</summary>
+    /// <summary>
+    /// Verdadeiro se este é o arquivo escolhido para ser mantido no grupo — inicialmente pelo
+    /// smart-select do Core, depois possivelmente por uma mudança de seleção do usuário
+    /// (ver <see cref="DuplicateGroupViewModel.NormalizeKeptFile"/>).
+    /// </summary>
     public bool IsKept => Model.IsKept;
 
-    /// <summary>Explicação legível da decisão do smart-select para este arquivo.</summary>
+    /// <summary>Explicação legível da decisão do smart-select (ou da seleção do usuário) para este arquivo.</summary>
     public string? Reason => Model.Reason;
+
+    /// <summary>Largura em pixels, quando conhecida (imagens e vídeos); null para os outros tipos de arquivo.</summary>
+    public int? Width => Model.Width;
+
+    /// <summary>Altura em pixels — ver <see cref="Width"/>.</summary>
+    public int? Height => Model.Height;
+
+    /// <summary>
+    /// Quantidade de pixels da imagem/vídeo (largura × altura), ou 0 quando a resolução é
+    /// desconhecida. É a chave de ordenação usada por
+    /// <see cref="DuplicateGroupViewModel.ChooseHighestResolutionFile"/> — existe aqui, e não
+    /// inline no chamador, para a multiplicação já sair como <see cref="long"/> e não estourar
+    /// em imagens muito grandes.
+    /// </summary>
+    public long PixelCount => (long)(Width ?? 0) * (Height ?? 0);
 
     /// <summary>
     /// Verdadeiro se este arquivo é de um formato de imagem suportado — usado para decidir se
@@ -53,5 +72,21 @@ public sealed partial class FileCandidateViewModel : ObservableObject
     partial void OnIsMarkedForDeletionChanged(bool value)
     {
         Model.MarkedForDeletion = value;
+    }
+
+    /// <summary>
+    /// Redefine se este arquivo é o "mantido" do seu grupo, propagando a decisão para o modelo
+    /// de domínio e notificando a UI (a coluna de motivo muda junto). Não é chamado pela View:
+    /// existe para o <see cref="DuplicateGroupViewModel"/> poder transferir o papel de "mantido"
+    /// para outro arquivo do grupo quando a seleção do usuário torna o mantido atual inválido
+    /// (ver <see cref="DuplicateGroupViewModel.NormalizeKeptFile"/>).
+    /// </summary>
+    public void SetKept(bool isKept, string? reason)
+    {
+        Model.IsKept = isKept;
+        Model.Reason = reason;
+
+        OnPropertyChanged(nameof(IsKept));
+        OnPropertyChanged(nameof(Reason));
     }
 }

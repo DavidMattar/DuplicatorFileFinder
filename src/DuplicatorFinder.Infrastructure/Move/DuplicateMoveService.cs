@@ -40,6 +40,7 @@ public sealed class DuplicateMoveService : IDuplicateMoveService
         string batchFolder,
         string keptFilePath,
         IEnumerable<string> copiesToMove,
+        bool moveKeptFile,
         CancellationToken cancellationToken)
     {
         // File.Move é síncrono; roda em uma thread de background para não bloquear quem
@@ -50,21 +51,26 @@ public sealed class DuplicateMoveService : IDuplicateMoveService
             var succeeded = new List<string>();
             var failures = new List<(string Path, string Error)>();
 
-            // 1. Move o arquivo mantido direto para dentro da pasta numerada.
-            try
+            // 1. Move o arquivo mantido direto para dentro da pasta numerada — só no modo
+            // "mover o grupo inteiro". No modo "manter o de maior resolução no lugar" ele é
+            // deliberadamente deixado onde está, e serve apenas para nomear a subpasta abaixo.
+            if (moveKeptFile)
             {
-                var keptDestination = ResolveCollisionFreeDestination(batchFolder, keptFilePath);
-                _fileSystem.File.Move(keptFilePath, keptDestination);
-                succeeded.Add(keptFilePath);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                failures.Add((keptFilePath, ex.Message));
+                try
+                {
+                    var keptDestination = ResolveCollisionFreeDestination(batchFolder, keptFilePath);
+                    _fileSystem.File.Move(keptFilePath, keptDestination);
+                    succeeded.Add(keptFilePath);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    failures.Add((keptFilePath, ex.Message));
+                }
             }
 
-            // 2. Move as cópias para uma subpasta ao lado do mantido, nomeada a partir dele —
-            // usa o nome original mesmo que o passo 1 tenha falhado, para o agrupamento
-            // continuar reconhecível mesmo nesse cenário raro.
+            // 2. Move as cópias para uma subpasta nomeada a partir do arquivo mantido — usa o
+            // nome original dele mesmo quando o passo 1 falhou ou foi pulado, para o
+            // agrupamento continuar reconhecível nos dois modos de movimentação.
             var copiesList = copiesToMove.ToList();
             if (copiesList.Count == 0)
             {

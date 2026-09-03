@@ -1,6 +1,8 @@
 using System.Globalization;
+using System.IO;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+using DuplicatorFinder.Core.Support;
 
 namespace DuplicatorFinder.App.Converters;
 
@@ -31,12 +33,32 @@ public sealed class FilePathToThumbnailConverter : IValueConverter
             return null;
         }
 
+        // Nem tenta decodificar o que não é imagem (vídeos, documentos, arquivos compactados —
+        // a lista de resultados mostra a mesma linha com miniatura para qualquer tipo de
+        // arquivo duplicado). Além de evitar trabalho inútil, esse atalho é o que mantém a
+        // maioria dos arquivos longe do decodificador do WPF, que só devolve o handle do
+        // arquivo quando a decodificação dá certo (ver o comentário sobre o FileStream abaixo).
+        if (!FileTypeClassifier.IsImageExtension(Path.GetExtension(path)))
+        {
+            return null;
+        }
+
         var pixelWidth = parameter is string parameterText && int.TryParse(parameterText, out var requested)
             ? requested
             : DefaultPixelWidth;
 
         try
         {
+            // Decodifica a partir de um FileStream nosso, em vez de UriSource: quando a
+            // decodificação falha (imagem corrompida, extensão de imagem com conteúdo que não
+            // é imagem), o BitmapImage criado por UriSource NÃO fecha o arquivo que abriu — e
+            // o arquivo fica travado pelo resto da sessão do app, o que fazia qualquer
+            // tentativa posterior de excluí-lo ou movê-lo falhar com "está sendo usado por
+            // outro processo", sem nenhuma pista na tela do motivo. Com StreamSource o
+            // "using" abaixo fecha o handle mesmo se EndInit lançar; CacheOption.OnLoad
+            // garante que os pixels já foram copiados para a memória antes disso.
+            using var stream = File.OpenRead(path);
+
             // BeginInit/EndInit explícitos são necessários aqui: preencher as mesmas
             // propriedades via inicializador de objeto (sem Begin/EndInit) deixa o BitmapImage
             // num estado "nunca finalizado" que não lança nem em Convert() nem no binding, só
@@ -46,7 +68,7 @@ public sealed class FilePathToThumbnailConverter : IValueConverter
             bitmap.BeginInit();
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.DecodePixelWidth = pixelWidth;
-            bitmap.UriSource = new Uri(path);
+            bitmap.StreamSource = stream;
             bitmap.EndInit();
             bitmap.Freeze();
             return bitmap;

@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using DuplicatorFinder.App.ViewModels;
 using DuplicatorFinder.App.Views;
+using DuplicatorFinder.Core.Models;
 using Microsoft.Win32;
 
 namespace DuplicatorFinder.App.Services;
@@ -42,9 +43,22 @@ public sealed class DialogService : IDialogService
     }
 
     /// <inheritdoc />
-    public bool ConfirmMove(int fileCount, long totalBytesToMove, string destinationFolder)
+    public DuplicateMoveMode? PickMoveMode()
     {
-        var viewModel = new MoveConfirmationViewModel(fileCount, totalBytesToMove, destinationFolder);
+        var viewModel = new MoveModeViewModel();
+        var dialog = new MoveModeDialog
+        {
+            DataContext = viewModel,
+            Owner = Application.Current.MainWindow,
+        };
+
+        return dialog.ShowDialog() == true ? viewModel.SelectedMode : null;
+    }
+
+    /// <inheritdoc />
+    public bool ConfirmMove(int fileCount, long totalBytesToMove, string destinationFolder, DuplicateMoveMode mode)
+    {
+        var viewModel = new MoveConfirmationViewModel(fileCount, totalBytesToMove, destinationFolder, mode);
         var dialog = new MoveConfirmationDialog
         {
             DataContext = viewModel,
