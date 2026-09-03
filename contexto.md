@@ -2,18 +2,26 @@
 
 Este arquivo não substitui `CLAUDE.md` (arquitetura e convenções do projeto) nem
 `iaInstructions.md` (runbook de setup do zero) — leia os dois primeiro. Este aqui registra o
-que foi construído e decidido numa sessão de trabalho específica, para uma IA (ou pessoa) futura
-não precisar reconstruir esse raciocínio do zero ao continuar o projeto.
+que foi construído e decidido em cada sessão de trabalho, para uma IA (ou pessoa) futura
+não precisar reconstruir esse raciocínio do zero ao continuar o projeto. Está em ordem
+cronológica: a **sessão 2** (correção do "Inverter seleção" e os modos de movimentação) está
+no fim do arquivo e é a mais recente.
 
-## Estado no fim desta sessão
+## Estado atual do projeto
 
 - Branch `main`, sincronizado com `origin/main` (GitHub: `DavidMattar/DuplicatorFileFinder`).
-- Último commit: `cddf516` — "Add preview, open-locations, and move-to-folder features on
-  results screen".
-- Build limpo (0 erros/avisos), 26 testes automatizados passando (17 em
-  `DuplicatorFinder.Core.Tests`, 9 em `DuplicatorFinder.Infrastructure.Tests`).
-- `.gitignore` criado nesta sessão (não existia antes): ignora `bin/`, `obj/`, `.vs/`, `.idea/`
-  e `/fileTesting/`.
+- Último commit de código: `4557049` — "Fix invert-selection breaking the marked-file actions,
+  add move modes" (sessão 2).
+- Build limpo (0 erros/avisos), **27 testes automatizados passando** (17 em
+  `DuplicatorFinder.Core.Tests`, 10 em `DuplicatorFinder.Infrastructure.Tests`).
+- `.gitignore` ignora `bin/`, `obj/`, `.vs/`, `.idea/` e `/fileTesting/`.
+
+---
+
+# Sessão 1 — Preview, abrir locais e mover cópias
+
+Fim desta sessão: commit `cddf516`, 26 testes passando. O `.gitignore` foi criado aqui (não
+existia antes).
 
 ## Funcionalidades adicionadas nesta sessão (tela de Resultados)
 
@@ -57,8 +65,10 @@ final, atualmente no código:
   uma subpasta ao lado, `"{nome do mantido} copies moved"` (`IDuplicateMoveService.MoveGroupAsync`).
 - **Importante**: diferente da exclusão, aqui o arquivo **mantido também é movido** (não fica
   mais "onde estava") — foi um pedido explícito do usuário depois da primeira versão (que só
-  movia as cópias, deixando o original no lugar). Se pedirem para mudar esse comportamento de
-  novo, é só remover o passo que move `keptFilePath` em `DuplicateMoveService.MoveGroupAsync`.
+  movia as cópias, deixando o original no lugar).
+  **Atualização (sessão seguinte)**: os dois comportamentos passaram a coexistir como
+  `DuplicateMoveMode`, escolhido pelo usuário num diálogo ao clicar em "Mover selecionados" —
+  ver "Modos de movimentação" na sessão 2, abaixo.
 - Arquitetura: interface `Core/Abstractions/IDuplicateMoveService.cs`, implementação
   `Infrastructure/Move/DuplicateMoveService.cs` (usa `System.IO.Abstractions.IFileSystem`, não
   API do Windows — por isso fica testável com `MockFileSystem`, ver
@@ -164,7 +174,7 @@ funcionou bem: criar um projeto C#/WPF **descartável** fora do repo (no scratch
 Foi assim que o bug do `BitmapImage` (seção acima) foi encontrado: a imagem aparecia em branco
 no screenshot mesmo sem nenhum erro lançado em lugar nenhum.
 
-## Pendências / coisas a considerar no futuro (não pedidas ainda, só observações)
+## Pendências levantadas na sessão 1 (ver a lista consolidada no fim do arquivo)
 
 - Não existe projeto de testes para `DuplicatorFinder.App` (só Core e Infrastructure têm
   testes). A lógica de UI foi validada manualmente e via o harness descartável descrito acima.
@@ -174,3 +184,137 @@ no screenshot mesmo sem nenhum erro lançado em lugar nenhum.
 - `ImageEntry`/`VideoEntry` em `Core/Models/` parecem não ser usados por nenhum detector (que
   usam records privados próprios, `DecodedImage`/`VideoMetadata`) — candidatos a código morto,
   não removidos ainda por não ter sido confirmado com o usuário.
+
+---
+
+# Sessão 2 — Correção do "Inverter seleção" e os dois modos de movimentação
+
+Commit de código: `4557049`. Pedido do usuário, literalmente: *"na hora que eu clicar na opção
+de excluir apos ser feita a varredura, se eu clico em inverter a seleção a exclusão dos marcados
+não funciona, arrume isso"* + *"quando eu clicar em mover eu quero que o programa me dê mais uma
+opção além da atual: pegar um de cada arquivo duplicado (o com a maior resolução) e o restante
+das cópias movidas para uma única pasta dentro dessa selecionada"*.
+
+Investigar esse relato levou a **dois** bugs distintos, os dois só reproduzíveis executando a
+UI de verdade.
+
+### Bug 1 — "Inverter seleção" tornava as ações inertes
+
+`InvertSelection` invertia a marcação de todo arquivo, **inclusive do arquivo mantido**. O
+resultado era um grupo com `IsKept == true` **e** `MarkedForDeletion == true` no mesmo arquivo
+— combinação que o XML doc de `DuplicateFile.MarkedForDeletion` explicitamente proíbe. Como
+`MoveSelectedAsync` filtrava por `IsMarkedForDeletion && !IsKept`, o único arquivo marcado de
+cada grupo caía fora desse filtro e o botão respondia **"Nenhum arquivo selecionado para
+mover"** com itens visivelmente marcados na tela. A exclusão "funcionava", mas apagava o
+original e deixava o grupo sem nenhum mantido definido, o que quebrava tudo dali para frente.
+
+**Correção**: a invariante do grupo passou a ter um guardião explícito,
+`DuplicateGroupViewModel.NormalizeKeptFile()` / `PromoteToKeptFile()` — exatamente um mantido,
+nunca marcado para exclusão. É chamado por `SelectRecommended`, `InvertSelection` e
+`RemoveFilesFromGroups` (ações em massa e remoções), **não** a cada clique de checkbox: marcar
+o original à mão continua sendo permitido, como sempre foi. Se todos os arquivos de um grupo
+acabarem marcados, um deles é desmarcado para sobreviver — apagar um grupo inteiro é
+justamente o que o app existe para evitar.
+
+`FileCandidateViewModel.IsKept`/`Reason` deixaram de ser somente-leitura estáticos: agora
+mudam via `SetKept(...)`, que notifica a UI (a coluna de motivo acompanha a troca de original).
+
+### Bug 2 — miniatura que falha travava o arquivo pela sessão inteira
+
+Achado enquanto se verificava a correção acima, num teste de movimentação em disco real.
+`FilePathToThumbnailConverter` decodificava via `BitmapImage.UriSource`; quando a decodificação
+**falha** (qualquer não-imagem — a lista de resultados mostra `<Image>` em toda linha,
+independente do tipo — ou uma imagem corrompida), o `BitmapImage` **não fecha o arquivo que
+abriu**. O arquivo ficava travado até o app fechar, e toda tentativa de excluí-lo ou movê-lo
+falhava com "está sendo usado por outro processo", sem pista nenhuma na tela.
+
+**Correção**: decodifica a partir de um `FileStream` próprio (`StreamSource` + `using`), que
+fecha o handle mesmo se `EndInit()` lançar, e nem tenta decodificar o que não é imagem
+(`FileTypeClassifier.IsImageExtension`). Verificado com uma sonda que gera um `.jpg` corrompido,
+chama o conversor e tenta `File.Move` em seguida: falhava antes, passa agora.
+
+Vale como aviso geral: **nenhum teste com mock pegaria nenhum dos dois bugs**. Os dois só
+apareceram executando a UI de verdade (a técnica descrita em "Como testar a UI de verdade").
+
+### Modos de movimentação (`DuplicateMoveMode`)
+
+Clicar em "Mover selecionados" agora abre primeiro `Views/MoveModeDialog.xaml`
+(`MoveModeViewModel`), com duas opções — e só depois pergunta a pasta de destino e confirma.
+A estrutura criada no destino é **idêntica** nos dois modos (uma única `copias(x)`, com uma
+subpasta `"{nome do sobrevivente} copies moved"` por grupo); o que muda é quem sobrevive e se
+ele sai do lugar:
+
+| | `MoveEntireGroup` (padrão, comportamento antigo) | `KeepHighestResolutionInPlace` (novo) |
+|---|---|---|
+| quem sobrevive | o arquivo mantido na tela (smart-select + ajuste manual) | o de **maior resolução** (largura × altura) do grupo |
+| sobrevivente é movido? | sim, para a raiz de `copias(x)` | **não**, fica exatamente onde está |
+| o que é movido | só os arquivos **marcados** | **todas** as outras cópias do grupo, marcadas ou não |
+
+A diferença de escopo da última linha é deliberada e está escrita no diálogo antes de o usuário
+confirmar: no modo por resolução a regra é "fica um de cada, o de maior resolução", então parar
+em quem está marcado deixaria para trás justamente o arquivo que o smart-select desmarcou. Nos
+dois modos a marcação continua decidindo **quais grupos** participam (grupo sem nada marcado é
+ignorado). Se o usuário pedir para o modo novo também respeitar as caixas desmarcadas, o ajuste
+é de uma linha em `ResultsViewModel.PlanMove`.
+
+Detalhes de implementação:
+
+- `IDuplicateMoveService.MoveGroupAsync` ganhou um parâmetro `bool moveKeptFile` — é a única
+  coisa que a Infrastructure precisa saber sobre o modo escolhido (o enum inteiro não desce
+  até lá). Coberto pelo teste `MoveGroupAsync_LeavesKeptFileInPlace_WhenMoveKeptFileIsFalse`.
+- `ResultsViewModel.PlanMove` decide, por grupo, sobrevivente + arquivos a mover, **antes** de
+  qualquer diálogo de confirmação — nada é mutado até o usuário confirmar. O plano é um
+  `record` privado (`MoveGroupPlan`).
+- No modo por resolução, depois da movimentação o sobrevivente é promovido a mantido
+  (`PromoteToKeptFile`): ele continua na lista e, sem isso, ficaria marcado para exclusão com o
+  papel de original em outro arquivo — um "Excluir selecionados" logo depois apagaria justamente
+  a melhor versão.
+- `MoveConfirmationViewModel` repete a explicação do modo via `MoveModeViewModel.Describe(...)`,
+  em vez de manter uma segunda redação que pode divergir com o tempo.
+- `RemoveFilesFromGroups` agora também remove o arquivo de `group.Model.Files`, senão
+  `WastedBytes` (calculado no Core sobre essa lista) seguiria contando arquivos que já saíram
+  do disco.
+
+### Como os dois bugs foram reproduzidos (vale repetir a receita)
+
+Ler o código não bastou: o caminho ViewModel → exclusão parecia correto, e um teste puro de
+ViewModel passa. O que resolveu foi a técnica da seção "Como testar a UI de verdade" (sessão 1),
+com dois detalhes novos que custaram tempo e valem ficar registrados:
+
+- **`button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent))` NÃO executa o `Command` do
+  botão** — o primeiro harness "reproduziu" um bug inexistente (nenhum botão fazia nada) só por
+  causa disso. O que simula um clique de verdade é o peer de automação:
+  `((IInvokeProvider)new ButtonAutomationPeer(button)).Invoke()`. Para `RadioButton`/`CheckBox`,
+  `((IToggleProvider)new RadioButtonAutomationPeer(radio)).Toggle()`.
+- **Arquivos de teste falsos escondem/criam problemas**: o harness criava `.jpg` com texto
+  dentro, o que fez *todos* os arquivos ficarem travados pelo bug 2 e o move real falhar em
+  100% dos casos. Gerar imagem de verdade (ou um PNG 1x1 em base64) é o que separa "o app está
+  quebrado" de "o meu dado de teste está quebrado".
+
+Foram 4 harnesses no scratchpad, cada um respondendo uma pergunta: (1) o VM inverte de fato?
+(2) a virtualização/recycling da `ListBox` corrompe a marcação ao rolar? — não, 120 grupos
+rolados nos dois sentidos, 0 divergência entre UI e VM; (3) os fluxos encadeados
+(inverter → mover, inverter → excluir, excluir → inverter → excluir) mantêm a invariante do
+grupo? (4) a movimentação em disco real produz a árvore de pastas certa nos dois modos, e a
+janela nova renderiza? O harness 3 imprimia `!!! INVARIANTE QUEBRADA` sempre que um grupo
+ficava com ≠1 mantido ou com um mantido marcado — é o que provou o bug 1 e depois a correção.
+
+## Pendências consolidadas (não pedidas, só observações)
+
+- **Não existe projeto de testes para `DuplicatorFinder.App`.** Isso ficou mais relevante depois
+  desta sessão: a invariante "exatamente um mantido por grupo, nunca marcado" é exatamente o
+  tipo de coisa que regride sem alarme, e hoje ela só está coberta pelos harnesses descartáveis
+  (que não ficam no repo). Foi oferecido ao usuário e não pedido — criar o projeto muda o
+  layout da solução, então ficou como decisão dele.
+- **O cabeçalho de cada grupo ainda não reage a tudo.** `WastedBytes` passou a ser notificado
+  (e `Model.Files` passou a ser podado junto com a lista da UI), mas
+  `DuplicateGroupViewModel.HasPreviewableImages` continua calculado uma vez: depois de
+  excluir/mover, o botão "Preview" não desaparece mesmo que não sobre nenhuma imagem no grupo.
+- **`ImageEntry`/`VideoEntry` em `Core/Models/`** continuam sem uso por nenhum detector (que
+  usam records privados próprios, `DecodedImage`/`VideoMetadata`) — candidatos a código morto,
+  não removidos por falta de confirmação.
+- **Modo por resolução move também as cópias desmarcadas** do grupo (decisão explicada acima).
+  Se o usuário mudar de ideia, é uma linha em `ResultsViewModel.PlanMove`.
+- **`FilePathToThumbnailConverter` continua decodificando de forma síncrona e sem cache**, agora
+  com o atalho de nem tentar arquivos que não são imagem. O carregamento assíncrono com cache
+  LRU segue como polish para uma versão futura.
